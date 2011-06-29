@@ -1,4 +1,4 @@
-# add_mesh_pyramid.py (c) 2011 Phil Cote (cotejrp1)
+# string_it.py (c) 2011 Phil Cote (cotejrp1)
 #
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
@@ -20,6 +20,7 @@
 # ***** END GPL LICENCE BLOCK *****
 
 import bpy
+from pdb import set_trace
 
 bl_info = {
     'name': 'String It',
@@ -42,14 +43,20 @@ class StringItOperator(bpy.types.Operator):
     '''Creates a curve that runs through the centers of each selected object.'''
     bl_idname = "curve.sting_it_operator"
     bl_label = "String It"
+    bl_options = { "REGISTER", "UNDO" }
     
-    
+    splineOptionList = [ ( 'bezier', 'bezier', 'bezier' ), ( 'poly', 'poly', 'poly' ), ]
+    splineChoice = bpy.props.EnumProperty( name="Spline Type", items=splineOptionList )
+            
+            
     @classmethod
     def poll(cls, context):
         return context.active_object != None
 
+
     def execute(self, context):
         
+        splineType = self.splineChoice.upper()
         scn = context.scene
         obList = [ ob for ob in scn.objects if ob.select ]
 
@@ -62,23 +69,34 @@ class StringItOperator(bpy.types.Operator):
         
         # build the curve itself.
         crv = bpy.data.curves.new( "curve", type = "CURVE" )
-        crv.splines.new( type="BEZIER" )
+        crv.splines.new( type= splineType )
         spline = crv.splines[0]
-        spline.bezier_points.add( len( obList ) - 1 )
-        spline.bezier_points.foreach_set( "co", vertList )
+        if splineType == 'BEZIER':
+            spline.bezier_points.add( len( obList ) - 1 )
+            spline.bezier_points.foreach_set( "co", vertList )
+            for point in spline.bezier_points:
+                point.handle_left_type = "AUTO"
+                point.handle_right_type = "AUTO"
         
         # add the curve to the scene.
         crvOb = bpy.data.objects.new( "curveOb", crv )
         scn.objects.link( crvOb )
         
-        # fix the bezier handles
-        for point in spline.bezier_points:
-            point.handle_left_type = "AUTO"
-            point.handle_right_type = "AUTO"
+        
             
         return {'FINISHED'}
 
 
+class StringItPanel( bpy.types.Panel ):
+    
+    bl_label = "String It"
+    bl_region_type = "UI"
+    bl_context = "tools"
+    
+    def draw( self, context ):
+        pass
+    
+    
 def register():
     bpy.utils.register_class(StringItOperator)
 
@@ -89,4 +107,3 @@ def unregister():
 
 if __name__ == "__main__":
     register()
-
