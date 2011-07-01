@@ -20,7 +20,6 @@
 # ***** END GPL LICENCE BLOCK *****
 
 import bpy
-from pdb import set_trace
 
 bl_info = {
     'name': 'String It',
@@ -34,9 +33,6 @@ bl_info = {
     'category': 'Add Curve'}
 
 
-
-
-
 def makeBezier( spline, vertList ):
     numPoints = ( len( vertList ) / 3 ) - 1
     spline.bezier_points.add( numPoints )
@@ -48,20 +44,23 @@ def makeBezier( spline, vertList ):
 def makePoly( spline, vertList ):
     numPoints = ( len( vertList ) / 4 ) - 1
     spline.points.add( numPoints )
-    print( "point addition successful" )
     spline.points.foreach_set( "co", vertList )
-    print( "foreach_set for the polyline successful..." )
     
 
 class StringItOperator(bpy.types.Operator):
     '''Creates a curve that runs through the centers of each selected object.'''
-    bl_idname = "curve.sting_it_operator"
+    bl_idname = "curve.string_it_operator"
     bl_label = "String It"
     bl_options = { "REGISTER", "UNDO" }
     
     splineOptionList = [  ( 'poly', 'poly', 'poly' ), ( 'bezier', 'bezier', 'bezier' ), ]
     splineChoice = bpy.props.EnumProperty( name="Spline Type", items=splineOptionList )
-               
+        
+    @classmethod   
+    def poll( self, context ):
+        totalSelected = len( [ob for ob in context.selectable_objects if ob.select] )
+        return totalSelected > 1
+    
     def execute(self, context):
         
         splineType = self.splineChoice.upper()
@@ -94,21 +93,22 @@ class StringItOperator(bpy.types.Operator):
 
 
 class StringItPanel( bpy.types.Panel ):
-    
     bl_label = "String It"
-    bl_region_type = "UI"
-    bl_context = "tools"
+    bl_region_type = "TOOLS"
+    bl_space_type = "VIEW_3D"
     
     def draw( self, context ):
-        pass
+        self.layout.row().operator( "curve.string_it_operator" )
     
     
 def register():
     bpy.utils.register_class(StringItOperator)
+    bpy.utils.register_class(StringItPanel)
 
 
 def unregister():
     bpy.utils.unregister_class(StringItOperator)
+    bpy.utils.unregister_class(StringItPanel)
 
 
 if __name__ == "__main__":
