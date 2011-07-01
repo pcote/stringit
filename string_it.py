@@ -37,7 +37,21 @@ bl_info = {
 
 
 
-
+def makeBezier( spline, vertList ):
+    numPoints = ( len( vertList ) / 3 ) - 1
+    spline.bezier_points.add( numPoints )
+    spline.bezier_points.foreach_set( "co", vertList )
+    for point in spline.bezier_points:
+        point.handle_left_type = "AUTO"
+        point.handle_right_type = "AUTO"
+    
+def makePoly( spline, vertList ):
+    numPoints = ( len( vertList ) / 4 ) - 1
+    spline.points.add( numPoints )
+    print( "point addition successful" )
+    spline.points.foreach_set( "co", vertList )
+    print( "foreach_set for the polyline successful..." )
+    
 
 class StringItOperator(bpy.types.Operator):
     '''Creates a curve that runs through the centers of each selected object.'''
@@ -45,15 +59,9 @@ class StringItOperator(bpy.types.Operator):
     bl_label = "String It"
     bl_options = { "REGISTER", "UNDO" }
     
-    splineOptionList = [ ( 'bezier', 'bezier', 'bezier' ), ( 'poly', 'poly', 'poly' ), ]
+    splineOptionList = [  ( 'poly', 'poly', 'poly' ), ( 'bezier', 'bezier', 'bezier' ), ]
     splineChoice = bpy.props.EnumProperty( name="Spline Type", items=splineOptionList )
-            
-            
-    @classmethod
-    def poll(cls, context):
-        return context.active_object != None
-
-
+               
     def execute(self, context):
         
         splineType = self.splineChoice.upper()
@@ -66,24 +74,22 @@ class StringItOperator(bpy.types.Operator):
             vertList.append( sceneOb.location.x )
             vertList.append( sceneOb.location.y )
             vertList.append( sceneOb.location.z )
-        
+            if splineType == 'POLY':
+                vertList.append( 0 )
+
         # build the curve itself.
         crv = bpy.data.curves.new( "curve", type = "CURVE" )
-        crv.splines.new( type= splineType )
+        crv.splines.new( type = splineType )
         spline = crv.splines[0]
         if splineType == 'BEZIER':
-            spline.bezier_points.add( len( obList ) - 1 )
-            spline.bezier_points.foreach_set( "co", vertList )
-            for point in spline.bezier_points:
-                point.handle_left_type = "AUTO"
-                point.handle_right_type = "AUTO"
-        
+            makeBezier( spline, vertList )
+                
+        else: #polyline case.
+            makePoly( spline, vertList )
+            
         # add the curve to the scene.
         crvOb = bpy.data.objects.new( "curveOb", crv )
-        scn.objects.link( crvOb )
-        
-        
-            
+        scn.objects.link( crvOb )            
         return {'FINISHED'}
 
 
