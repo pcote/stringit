@@ -50,11 +50,12 @@ def makePoly( spline, vertList ):
 class StringItOperator(bpy.types.Operator):
     '''Creates a curve that runs through the centers of each selected object.'''
     bl_idname = "curve.string_it_operator"
-    bl_label = "String It"
+    bl_label = "String It Options"
     bl_options = { "REGISTER", "UNDO" }
     
     splineOptionList = [  ( 'poly', 'poly', 'poly' ), ( 'bezier', 'bezier', 'bezier' ), ]
     splineChoice = bpy.props.EnumProperty( name="Spline Type", items=splineOptionList )
+    closeSpline = bpy.props.BoolProperty( name="Close Spline?", default=False )
         
     @classmethod   
     def poll( self, context ):
@@ -85,7 +86,9 @@ class StringItOperator(bpy.types.Operator):
                 
         else: #polyline case.
             makePoly( spline, vertList )
-            
+        
+        spline.use_cyclic_u = self.closeSpline
+        
         # add the curve to the scene.
         crvOb = bpy.data.objects.new( "curveOb", crv )
         scn.objects.link( crvOb )            
@@ -98,7 +101,7 @@ class StringItPanel( bpy.types.Panel ):
     bl_space_type = "VIEW_3D"
     
     def draw( self, context ):
-        self.layout.row().operator( "curve.string_it_operator" )
+        self.layout.row().operator( "curve.string_it_operator", text="Make Curve" )
     
     
 def register():
