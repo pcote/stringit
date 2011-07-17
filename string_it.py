@@ -20,10 +20,11 @@
 # ***** END GPL LICENCE BLOCK *****
 
 import bpy
+from pdb import set_trace
 
 bl_info = {
     'name': 'String It',
-    'author': 'Phil Cote, cotejrp1, (http://www.blenderpythontutorials.com)',
+    'author': 'Phil Cote, cotejrp1, (http://www.blenderaddons.com)',
     'version': (0,1),
     "blender": (2, 5, 8),
     "api": 37702,
@@ -45,6 +46,21 @@ def makePoly( spline, vertList ):
     numPoints = ( len( vertList ) / 4 ) - 1
     spline.points.add( numPoints )
     spline.points.foreach_set( "co", vertList )
+
+
+def buildHooks( curveOb, object_list ):
+    #bpy.ops.object.mode_set()
+    bpy.context.scene.objects.active = curveOb
+    bpy.ops.object.mode_set()
+    # create the hooks to each object
+    for i in range(len(object_list)):
+        object_list[i].select = True
+        curveOb.data.splines[0].bezier_points[i].select_control_point = True
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.object.hook_add_selob()
+        bpy.ops.object.editmode_toggle()
+        curveOb.data.splines[0].bezier_points[i].select_control_point = False
+        object_list[i].select = False
     
 
 class StringItOperator(bpy.types.Operator):
@@ -56,6 +72,7 @@ class StringItOperator(bpy.types.Operator):
     splineOptionList = [  ( 'poly', 'poly', 'poly' ), ( 'bezier', 'bezier', 'bezier' ), ]
     splineChoice = bpy.props.EnumProperty( name="Spline Type", items=splineOptionList )
     closeSpline = bpy.props.BoolProperty( name="Close Spline?", default=False )
+    attachObjects = bpy.props.BoolProperty( name = "Attach Objects?", default = False ) 
         
     @classmethod   
     def poll( self, context ):
@@ -81,17 +98,26 @@ class StringItOperator(bpy.types.Operator):
         crv = bpy.data.curves.new( "curve", type = "CURVE" )
         crv.splines.new( type = splineType )
         spline = crv.splines[0]
+        
+        # bezier option
         if splineType == 'BEZIER':
             makeBezier( spline, vertList )
-                
-        else: #polyline case.
+        
+        # polylne option        
+        else:
             makePoly( spline, vertList )
         
+        # close spline checkbox option
         spline.use_cyclic_u = self.closeSpline
         
         # add the curve to the scene.
         crvOb = bpy.data.objects.new( "curveOb", crv )
-        scn.objects.link( crvOb )            
+        scn.objects.link( crvOb )  
+        
+        # attach to curve option
+        if self.attachObjects:
+            buildHooks( crvOb, obList )
+                      
         return {'FINISHED'}
 
 
