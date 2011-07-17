@@ -18,7 +18,27 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
 # ***** END GPL LICENCE BLOCK *****
+"""
+HOW TO USE:
 
+The String It tool is found in the 3D view's tool panel when you hit 'T'.
+To make the initial curve, select the scene items you want the curve to run through.
+Once you have what you want, hit 'Make Curve'
+
+Options:
+Spline Type - You can choose here between whether or not you want a straight polyline or a bezier curves
+running through your objects.
+
+Close Shape - Use this to close add one more segment to close the curve.
+
+Finalize and Attach - Places hook modifiers on the curve to attach it's points to each of the objects.
+
+WARNING:
+If you select out of this, you lose the option to attach the curve using the tool.
+Also, Finalizing and attachment completes the operator.  Only use it when you know you have the curve
+configuration you want.
+
+"""
 import bpy
 from pdb import set_trace
 
@@ -48,18 +68,28 @@ def makePoly( spline, vertList ):
     spline.points.foreach_set( "co", vertList )
 
 
-def buildHooks( curveOb, object_list ):
-    #bpy.ops.object.mode_set()
+def buildHooks( splineChoice, curveOb, object_list ):
+    
     bpy.context.scene.objects.active = curveOb
-    bpy.ops.object.mode_set()
+    
     # create the hooks to each object
     for i in range(len(object_list)):
         object_list[i].select = True
-        curveOb.data.splines[0].bezier_points[i].select_control_point = True
+        
+        if splineChoice == 'bezier':
+            curveOb.data.splines[0].bezier_points[i].select_control_point = True
+        else: # assume poly
+            curveOb.data.splines[0].points[i].select = True
+            
         bpy.ops.object.editmode_toggle()
         bpy.ops.object.hook_add_selob()
         bpy.ops.object.editmode_toggle()
-        curveOb.data.splines[0].bezier_points[i].select_control_point = False
+        
+        if splineChoice == 'bezier':
+            curveOb.data.splines[0].bezier_points[i].select_control_point = False
+        else:
+            curveOb.data.splines[0].points[i].select = False
+            
         object_list[i].select = False
     
 
@@ -68,11 +98,17 @@ class StringItOperator(bpy.types.Operator):
     bl_idname = "curve.string_it_operator"
     bl_label = "String It Options"
     bl_options = { "REGISTER", "UNDO" }
+    bl_description = \
+        "Select the objects you want to run a line through and then click this button more options."
     
-    splineOptionList = [  ( 'poly', 'poly', 'poly' ), ( 'bezier', 'bezier', 'bezier' ), ]
-    splineChoice = bpy.props.EnumProperty( name="Spline Type", items=splineOptionList )
-    closeSpline = bpy.props.BoolProperty( name="Close Spline?", default=False )
-    attachObjects = bpy.props.BoolProperty( name = "Attach Objects?", default = False ) 
+    splineOptionList = [  ( 'poly', 'poly', 'Poly Curve' ), ( 'bezier', 'bezier', 'Bezier Curve' ), ]
+    splineChoice = bpy.props.EnumProperty( name="Spline Type", items=splineOptionList,
+                description = "String it up with a straight(poly) line or a curved (bezier) one" )
+    closeSpline = bpy.props.BoolProperty( name="Close Shape", default=False,
+                description = "Add one more segment to make the curve being created a closed shape. " + \
+                "If you want a closed curve to be attached, make sure to check this option first." )
+    attachObjects = bpy.props.BoolProperty( name = "Finalize and Attach", default = False,
+                description = "Hook attach curve to objects ONLY when ready to commit to this." ) 
         
     @classmethod   
     def poll( self, context ):
@@ -103,7 +139,7 @@ class StringItOperator(bpy.types.Operator):
         if splineType == 'BEZIER':
             makeBezier( spline, vertList )
         
-        # polylne option        
+        # polyline option        
         else:
             makePoly( spline, vertList )
         
@@ -116,7 +152,7 @@ class StringItOperator(bpy.types.Operator):
         
         # attach to curve option
         if self.attachObjects:
-            buildHooks( crvOb, obList )
+            buildHooks( self.splineChoice, crvOb, obList )
                       
         return {'FINISHED'}
 

@@ -1,17 +1,22 @@
 String It
 by Phil Cote
+http://www.blenderaddons.com
 
-What It Does:
-String It generates a curve that runs though the center or every object selected in a scene.
+HOW TO USE:
 
-How to Install It:
-1.  Pull up the preferences box and go to add-ons. 
-2.  Click install addon and install the string it script.
-3.  Go to the "add curves section of the "add-ons" tab.
-4.  Check box the "String It Script."
-5.  Close the preferences box.
+The String It tool is found in the 3D view's tool panel when you hit 'T'.
+To make the initial curve, select the scene items you want the curve to run through.
+Once you have what you want, hit 'Make Curve'
 
-How to Use It:
-1.  In the 3D view, select the scene objects you want to have the curve run through.
-2.  When done, hit the space bar and type in "String It"
-3.  Hit enter.  Your selected objects should all have a curve running through their centers.
+Options:
+Spline Type - You can choose here between whether or not you want a straight polyline or a bezier curves
+running through your objects.
+
+Close Shape - Use this to close add one more segment to close the curve.
+
+Finalize and Attach - Places hook modifiers on the curve to attach it's points to each of the objects.
+
+WARNING:
+If you select out of this, you lose the option to attach the curve using the tool.
+Also, Finalizing and attachment completes the operator.  Only use it when you know you have the curve
+configuration you want.
