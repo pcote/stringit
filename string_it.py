@@ -45,7 +45,7 @@ from pdb import set_trace
 bl_info = {
     'name': 'String It',
     'author': 'Phil Cote, cotejrp1, (http://www.blenderaddons.com)',
-    'version': (0,1),
+    'version': (0,2),
     "blender": (2, 5, 8),
     "api": 37702,
     'location': '',
@@ -74,22 +74,28 @@ def buildHooks( splineChoice, curveOb, object_list ):
     
     # create the hooks to each object
     for i in range(len(object_list)):
+        
+        # object to be hooked into gets selected.
         object_list[i].select = True
         
+        # the specific curve point on the curve needs to be selected.
         if splineChoice == 'bezier':
             curveOb.data.splines[0].bezier_points[i].select_control_point = True
-        else: # assume poly
+        else:
             curveOb.data.splines[0].points[i].select = True
-            
+        
+        # establish the hook mod between the select curve point and the selected object.
         bpy.ops.object.editmode_toggle()
         bpy.ops.object.hook_add_selob()
         bpy.ops.object.editmode_toggle()
         
+        # deselect the curve point.
         if splineChoice == 'bezier':
             curveOb.data.splines[0].bezier_points[i].select_control_point = False
         else:
             curveOb.data.splines[0].points[i].select = False
             
+        # deselect the object and we're done with this point.
         object_list[i].select = False
     
 
