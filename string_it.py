@@ -22,20 +22,21 @@
 HOW TO USE:
 
 The String It tool is found in the 3D view's tool panel when you hit 'T'.
-To make the initial curve, select the scene items you want the curve to run through.
+To make initial curve, select scene items you to run curve through.
 Once you have what you want, hit 'Make Curve'
 
 Options:
-Spline Type - You can choose here between whether or not you want a straight polyline or a bezier curves
+Spline Type - Choose straight polyline or a bezier curves
 running through your objects.
 
 Close Shape - Use this to close add one more segment to close the curve.
 
-Finalize and Attach - Places hook modifiers on the curve to attach it's points to each of the objects.
+Finalize and Attach - Place hook mods on curve to attach points to each object.
 
 WARNING:
-If you select out of this, you lose the option to attach the curve using the tool.
-Also, Finalizing and attachment completes the operator.  Only use it when you know you have the curve
+If you select out of this, you lose option to attach curve using the tool.
+Also, Finalizing and attachment completes the operator.
+Only use it when you know you have the curve
 configuration you want.
 
 """
@@ -50,128 +51,130 @@ bl_info = {
     "api": 37702,
     'location': '',
     'description': 'Run a curve through each selected object in a scene.',
-    'warning': '', # used for warning icon and text in addons panel
+    'warning': '',  # used for warning icon and text in addons panel
     'category': 'Add Curve'}
 
 
-def makeBezier( spline, vertList ):
-    numPoints = ( len( vertList ) / 3 ) - 1
-    spline.bezier_points.add( numPoints )
-    spline.bezier_points.foreach_set( "co", vertList )
+def makeBezier(spline, vertList):
+    numPoints = (len(vertList) / 3) - 1
+    spline.bezier_points.add(numPoints)
+    spline.bezier_points.foreach_set("co", vertList)
     for point in spline.bezier_points:
         point.handle_left_type = "AUTO"
         point.handle_right_type = "AUTO"
-    
-def makePoly( spline, vertList ):
-    numPoints = ( len( vertList ) / 4 ) - 1
-    spline.points.add( numPoints )
-    spline.points.foreach_set( "co", vertList )
 
 
-def buildHooks( splineChoice, curveOb, object_list ):
-    
+def makePoly(spline, vertList):
+    numPoints = (len(vertList) / 4) - 1
+    spline.points.add(numPoints)
+    spline.points.foreach_set("co", vertList)
+
+
+def buildHooks(splineChoice, curveOb, object_list):
+
     bpy.context.scene.objects.active = curveOb
-    
+
     # create the hooks to each object
     for i in range(len(object_list)):
-        
+
         # object to be hooked into gets selected.
         object_list[i].select = True
-        
+
         # the specific curve point on the curve needs to be selected.
         if splineChoice == 'bezier':
             curveOb.data.splines[0].bezier_points[i].select_control_point = True
         else:
             curveOb.data.splines[0].points[i].select = True
-        
-        # establish the hook mod between the select curve point and the selected object.
+
+        # set hook mod between the select curve point and the selected object.
         bpy.ops.object.editmode_toggle()
         bpy.ops.object.hook_add_selob()
         bpy.ops.object.editmode_toggle()
-        
+
         # deselect the curve point.
         if splineChoice == 'bezier':
             curveOb.data.splines[0].bezier_points[i].select_control_point = False
         else:
             curveOb.data.splines[0].points[i].select = False
-            
+
         # deselect the object and we're done with this point.
         object_list[i].select = False
-    
+
 
 class StringItOperator(bpy.types.Operator):
-    '''Creates a curve that runs through the centers of each selected object.'''
+    '''Makes curve that runs through the centers of each selected object.'''
     bl_idname = "curve.string_it_operator"
     bl_label = "String It Options"
-    bl_options = { "REGISTER", "UNDO" }
+    bl_options = {"REGISTER", "UNDO"}
     bl_description = \
-        "Select the objects you want to run a line through and then click this button more options."
-    
-    splineOptionList = [  ( 'poly', 'poly', 'Poly Curve' ), ( 'bezier', 'bezier', 'Bezier Curve' ), ]
-    splineChoice = bpy.props.EnumProperty( name="Spline Type", items=splineOptionList,
-                description = "String it up with a straight(poly) line or a curved (bezier) one" )
-    closeSpline = bpy.props.BoolProperty( name="Close Shape", default=False,
-                description = "Add one more segment to make the curve being created a closed shape. " + \
-                "If you want a closed curve to be attached, make sure to check this option first." )
-    attachObjects = bpy.props.BoolProperty( name = "Finalize and Attach", default = False,
-                description = "Hook attach curve to objects ONLY when ready to commit to this." ) 
-        
-    @classmethod   
-    def poll( self, context ):
-        totalSelected = len( [ob for ob in context.selectable_objects if ob.select] )
+        "Pick objects to run line through. Click button more options."
+
+    splineOptionList = [('poly', 'poly', 'Poly Curve'), ('bezier', 'bezier', 'Bezier Curve')]
+    splineChoice = bpy.props.EnumProperty(name="Spline Type", items=splineOptionList,
+                                          description="String it up with either a straight or curved line")
+    closeSpline = bpy.props.BoolProperty(name="Close Shape", default=False,
+                                         description="Add one more segment to make the curve being created a closed shape." +
+                                                     "If you want a closed curve to be attached, make sure to check this option first.")
+    attachObjects = bpy.props.BoolProperty(name="Finalize and Attach", default=False,
+                                           description="Hook attach curve to objects ONLY when ready to commit to this.")
+
+    @classmethod
+    def poll(self, context):
+        selected_obs = [ob for ob in context.selectable_objects if ob.select]
+        totalSelected = len(selected_obs)
         return totalSelected > 1
-    
+
     def execute(self, context):
-        
+
         splineType = self.splineChoice.upper()
         scn = context.scene
-        obList = [ ob for ob in scn.objects if ob.select ]
+        obList = [ob for ob in scn.objects if ob.select]
 
         # build the vert data set to use to make the curve
         vertList = []
         for sceneOb in obList:
-            vertList.append( sceneOb.location.x )
-            vertList.append( sceneOb.location.y )
-            vertList.append( sceneOb.location.z )
+            vertList.append(sceneOb.location.x)
+            vertList.append(sceneOb.location.y)
+            vertList.append(sceneOb.location.z)
             if splineType == 'POLY':
-                vertList.append( 0 )
+                vertList.append(0)
 
         # build the curve itself.
-        crv = bpy.data.curves.new( "curve", type = "CURVE" )
-        crv.splines.new( type = splineType )
+        crv = bpy.data.curves.new("curve", type="CURVE")
+        crv.splines.new(type=splineType)
         spline = crv.splines[0]
-        
+
         # bezier option
         if splineType == 'BEZIER':
-            makeBezier( spline, vertList )
-        
-        # polyline option        
+            makeBezier(spline, vertList)
+
+        # polyline option
         else:
-            makePoly( spline, vertList )
-        
+            makePoly(spline, vertList)
+
         # close spline checkbox option
         spline.use_cyclic_u = self.closeSpline
-        
+
         # add the curve to the scene.
-        crvOb = bpy.data.objects.new( "curveOb", crv )
-        scn.objects.link( crvOb )  
-        
+        crvOb = bpy.data.objects.new("curveOb", crv)
+        scn.objects.link(crvOb)
+
         # attach to curve option
         if self.attachObjects:
-            buildHooks( self.splineChoice, crvOb, obList )
-                      
+            buildHooks(self.splineChoice, crvOb, obList)
+
         return {'FINISHED'}
 
 
-class StringItPanel( bpy.types.Panel ):
+class StringItPanel(bpy.types.Panel):
     bl_label = "String It"
     bl_region_type = "TOOLS"
     bl_space_type = "VIEW_3D"
-    
-    def draw( self, context ):
-        self.layout.row().operator( "curve.string_it_operator", text="Make Curve" )
-    
-    
+
+    def draw(self, context):
+        self.layout.row().operator("curve.string_it_operator", text="Make Curve")
+
+
 def register():
     bpy.utils.register_class(StringItOperator)
     bpy.utils.register_class(StringItPanel)
